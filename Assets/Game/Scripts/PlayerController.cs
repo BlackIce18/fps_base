@@ -1,6 +1,8 @@
+using System;
+using Unity.Netcode;
 using UnityEngine;
 
-public class PlayerController : MonoBehaviour
+public class PlayerController : NetworkBehaviour
 {
     [Header("Movement")]
     public float speed = 4f;
@@ -12,11 +14,21 @@ public class PlayerController : MonoBehaviour
     public float groundDistance = 0.5f;
     public LayerMask groundMask;
 
-    private Vector3 velocity;
-    private bool isGrounded;
+    private Vector3 _velocity;
+    private bool _isGrounded;
+    private bool _isRunning;
+    private bool _isJumping;
 
     [SerializeField] private Rigidbody _rb;
     [SerializeField] private Camera _camera;
+    
+    [SerializeField] private CharacterAnimatorController _animator;
+
+    public Vector3 Velocity => _velocity;
+    public bool IsGrounded => _isGrounded;
+    public bool IsRunning => _isRunning;
+    public bool IsJumping => _isJumping;
+
     void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
@@ -27,7 +39,6 @@ public class PlayerController : MonoBehaviour
     {
         Gravity();
         Move();
-        Jump();
     }
     
     private void Move()
@@ -45,33 +56,48 @@ public class PlayerController : MonoBehaviour
 
         Vector3 movement = camForward * z + camRight * x;
         Vector3 targetVelocity = movement * speed;
-        Vector3 velocity = _rb.linearVelocity;
+        _velocity = _rb.linearVelocity;
         
-        if ((Input.GetAxis("Jump") > 0) && isGrounded)
+        if (Mathf.Abs(targetVelocity.x) > 0 || Mathf.Abs(targetVelocity.z) > 0)
         {
-            velocity.y = jumpHeight;
+            if (_isGrounded)
+            {
+                _isRunning = true;
+            }
         }
-        velocity.x = targetVelocity.x;
-        velocity.z = targetVelocity.z;
-        _rb.linearVelocity = velocity;
+        else
+        {
+            _isRunning = false;
+        }
+        
+        if ((Input.GetAxis("Jump") > 0) && _isGrounded)
+        {
+            _velocity.y = jumpHeight;
+            _isJumping = true;
+        }
+        
+        _velocity.x = targetVelocity.x;
+        _velocity.z = targetVelocity.z;
+        _rb.linearVelocity = _velocity;
     }
 
     void Gravity()
     {
-        isGrounded = Physics.CheckSphere(groundCheck.position, groundDistance, groundMask);
+        _isGrounded = Physics.CheckSphere(groundCheck.position, groundDistance, groundMask);
 
-        if (!isGrounded)
+        if (!_isGrounded)
         {
-            velocity.y = -2f;
+            _velocity.y = -2f;
+            _animator.Jump();
+            _isJumping = true;
+        }
+        else
+        {
+            _isJumping = false;
         }
 
-        velocity.y += gravity * Time.deltaTime;
+        _velocity.y += gravity * Time.deltaTime;
 
-        velocity = velocity * Time.deltaTime;
-    }
-    
-    private void Jump()
-    {
-
+        _velocity = _velocity * Time.deltaTime;
     }
 }

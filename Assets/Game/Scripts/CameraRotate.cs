@@ -12,7 +12,7 @@ public class CameraRotate : NetworkBehaviour
 
     void Start()
     {
-        if (!IsOwner)
+        if (!IsOwner && GlobalStates.IsDebugging)
         {
             return;
         }
@@ -23,7 +23,7 @@ public class CameraRotate : NetworkBehaviour
     
     void Update()
     {
-        if (!IsOwner) { return; }
+        if (!IsOwner && GlobalStates.IsDebugging) { return; }
 
         float mouseX = Input.GetAxis("Mouse X") * sensitivity * Time.deltaTime;
         float mouseY = Input.GetAxis("Mouse Y") * sensitivity * Time.deltaTime;
